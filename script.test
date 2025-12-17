@@ -1,0 +1,332 @@
+#!/bin/bash
+# Fichier : Automatisation_Snapshot.sh
+# Script principal : Interface de gestion et provisionnement des Snapshots Proxmox
+
+
+
+Chemin_stockage=/opt/proxmox-auto-snap
+
+# --- VARIABLES GLOBALES ---
+# Variables de chemin des scripts de stockage
+snapshot_PC="$Chemin_stockage/snapshot_PC.sh"
+snapshot_J="$Chemin_stockage/snapshot_J.sh"
+snapshot_C="$Chemin_stockage/snapshot_C.sh"
+Initialisation_scrip="$Chemin_stockage/commande_snapshot.sh"
+
+# Variables de menu et d'entrée utilisateur
+Option=""
+SousOption=""
+vmid=""
+name=""
+descipt=""
+
+
+
+check_root() {
+    # $EUID est l'Effective User ID. Root est 0.
+    if [ "$EUID" -ne 0 ]; then
+        echo "==================================================================" >&2
+        echo " ERREUR : Ce script DOIT être exécuté avec les privilèges root." >&2
+        echo "Veuillez exécuter la commande suivante :" >&2
+        echo "   sudo bash $0" >&2
+        echo "==================================================================" >&2
+        exit 1
+    fi
+}    
+
+check_root
+
+
+# --- FONCTION D'INSTALLATION CRON ---
+# Ajoute ou met à jour une tâche CRON pour un script donné.
+installer_cron_job() {
+    local script_chemin_abs="$1"
+    local prog_cron="$2"
+    
+    
+    
+    local cron_job="$prog_cron $script_chemin_abs"
+    
+    # Ajout/Mise à jour de la tâche CRON (Méthode fiable : supprime l'ancienne ligne, ajoute la nouvelle)
+    # 
+    (crontab -l 2>/dev/null | grep -v "$script_chemin_abs" ; echo "$cron_job") | crontab -
+    
+    if [ $? -eq 0 ]; then
+        echo "Tâche CRON installée pour $chaque_script: ($prog_cron)"
+    else
+        echo "Échec de l'installation de la tâche CRON pour $chaque_script." >&2
+        return 1
+    fi
+}
+
+supprimer_snapshot_vm() {
+    echo "Fonctionnalité de suppression en cours de développement."
+    read -p "Entrez l'ID de la VM à supprimer de l'automatisation : " vmid_suppression
+    # Ici, nous devrons lire les trois fichiers et supprimer la ligne correspondant à l'ID
+    echo "Recherche et suppression des commandes de la VM $vmid_suppression dans : $snapshot_PC, $snapshot_J, $snapshot_C..."
+}
+
+
+# --- FONCTION DE PROVISIONNEMENT INITIAL (Garantie de l'environnement) ---
+# Exécutée une seule fois au démarrage pour tout configurer.
+provisionnement_initial() {
+    echo "--- Démarrage du Provisionnement de l'Environnement ---"
+    
+
+
+# Créer le répertoire de stockage si nécessaire
+if [ ! -d "$Chemin_stockage" ]; then
+    echo "Création du répertoire de stockage : $Chemin_stockage"
+    mkdir -p "$Chemin_stockage"
+fi
+
+# Se déplacer dans le répertoire de travail
+cd "$Chemin_stockage" || { echo "Impossible d'accéder à $Chemin_stockage" >&2; exit 1; }
+
+    # Matrice de configuration pour tous les scripts cibles
+    local matrice_cron=(
+        "$snapshot_PC|1|0 2 1 * *|Pas critique (Mensuel)"      
+        "$snapshot_J|2|0 3 * * *|Journalier"                   
+        "$snapshot_C|3|*/30 * * * *|Critique (30m)"             
+    )
+    
+    # 1. Création/Initialisation des 3 Fichiers Cibles (NOUVEAU BLOC AMÉLIORÉ)
+    
+    echo "-> Vérification et initialisation des scripts cibles..."
+    for ligne in "${matrice_cron[@]}"; do
+        local CHAQUE_SCRIPT NIVEAU
+        # Utilisation de IFS/read pour découper la ligne 
+        IFS='|' read -r CHAQUE_SCRIPT _ _ NIVEAU <<< "$ligne"
+        
+        # Initialisation du fichier cible si nécessaire (Si le fichier n'existe pas OU est vide)
+        if [ ! -f "$CHAQUE_SCRIPT" ] || [ ! -s "$CHAQUE_SCRIPT" ]; then
+            echo "   -> Création/Nettoyage de : $CHAQUE_SCRIPT"
+            echo "#!/bin/bash" > "$CHAQUE_SCRIPT"
+            chmod +x "$CHAQUE_SCRIPT"
+            echo "# Commandes de snapshot à exécuter pour le niveau : $NIVEAU" >> "$CHAQUE_SCRIPT"
+        fi
+    done
+    
+    # 2. Installation des Tâches CRON
+    echo "-> Installation des tâches CRON..."
+    for ligne in "${matrice_cron[@]}"; do
+        local CHAQUE_SCRIPT prog_cron
+        IFS='|' read -r CHAQUE_SCRIPT _ prog_cron _ <<< "$ligne"
+        
+        # Installation de la tâche CRON
+        installer_cron_job "$CHAQUE_SCRIPT" "$prog_cron"
+    done
+    
+    # 3. Création du Script Moteur (commande_snapshot.sh) - Contenu corrigé et simplifié
+     Initialisation_scrip="./commande_snapshot.sh"
+    if [ ! -f "$Initialisation_scrip" ]; then
+        echo "-> Création du script moteur $Initialisation_scrip..."
+        
+        # Utilisation du Here Document pour écrire le moteur optimisé et CORRIGÉ (l'échappement est essentiel)
+        cat << 'EOT' > "$Initialisation_scrip"
+
+#!/bin/bash
+# Script Moteur (Auto-généré par manager.sh) - Rôle : Ajouter une commande snapshot au bon fichier cible.
+
+# --- VARIABLES GLOBALES DU MOTEUR ---
+
+Chemin_stockage="/opt/proxmox-auto-snap"
+Auto_snapshot_PC="$Chemin_stockage/snapshot_PC.sh"
+Auto_snapshot_J="$Chemin_stockage/snapshot_J.sh"
+Auto_snapshot_C="$Chemin_stockage/snapshot_C.sh"
+
+# --- VÉRIFICATION ARGUMENTS ---
+if [ "$#" -ne 4 ]; then
+    echo "Erreur interne: Le moteur nécessite 4 arguments." >&2
+    exit 1
+fi
+
+vmid="$1"
+NOM_SNAPSHOT="$2"
+DESCRIPTION="$3"
+SousOption="$4"
+
+# --- 1. SÉLECTIONNER LA CIBLE ---
+# Nous n'avons pas besoin de vérifier l'existence du fichier ici, car provisionnement_initial l'a garanti.
+case $SousOption in
+    1) CHAQUE_SCRIPT="$Auto_snapshot_PC"; ;;
+    2) CHAQUE_SCRIPT="$Auto_snapshot_J"; ;;
+    3) CHAQUE_SCRIPT="$Auto_snapshot_C"; ;;
+    *) echo "Erreur: Option de cible invalide ($SousOption)." >&2; exit 2; ;;
+esac
+
+# --- 2. Construction de la Commande QM (Correction de l'Échappement appliquée !) ---
+# Le \ garantit que $(date ...) est évalué par CRON, et non par ce script.
+SNAPSHOT_CMD="qm snapshot $vmid ${NOM_SNAPSHOT}_\$(date +%Y%m%d-%H%M%S) --description \"$DESCRIPTION\""
+
+# --- 3. Enregistrement dans le Fichier Script ---
+echo "$SNAPSHOT_CMD" >> "$CHAQUE_SCRIPT"
+
+if [ $? -eq 0 ]; then
+    echo "$CHAQUE_SCRIPT" # Retourne le nom du fichier cible sur stdout (pour capture par le manager.sh)
+    exit 0
+else
+    echo "Échec de l'écriture dans le fichier cible $CHAQUE_SCRIPT." >&2 
+    exit 3
+fi
+
+EOT
+        
+        chmod +x "$Initialisation_scrip"
+        echo "Script moteur créé avec succès."
+    fi
+    
+    echo "--- Provisionnement Terminé. L'environnement est prêt. ---"
+}
+
+
+# --- FONCTIONS DES MENUS ---
+
+
+menu() {
+    clear  # Nettoyer l'écran
+    echo "╔════════════════════════════════════════════════╗"
+    echo "║     AUTOMATISATION DE SNAPSHOTS PROXMOX        ║"
+    echo "╠════════════════════════════════════════════════╣"
+    echo "║  1 │ Automatiser un snapshot                   ║"
+    echo "║  2 │ Afficher la configuration actuelle        ║"
+    echo "║  3 │ Supprimer une automatisation              ║"
+    echo "║  4 │ Quitter                                   ║"
+    echo "╚════════════════════════════════════════════════╝"
+    echo ""
+    read -p "Veuillez choisir une option : " Option
+}
+menu_2(){
+    echo "----------------------------------------------------"
+    echo "----------------------------------------------------"
+    echo "Indiquer le niveau de la disponibilité de la VM"
+    echo " 1 : pas critique (Snapshot mensuel)"
+    echo " 2 : journalier"
+    echo " 3 : Critique"
+    echo " 4 : Retour au niveau principal"
+    echo "-----------------------------------------------------"
+    echo "----------------------------------------------------"
+    read -p "Veuillez choisir une option : " SousOption
+}
+
+#  PROVISIONNEMENT DE L'ENVIRONNEMENT (Appel unique au démarrage)
+# ----------------------------------------------------
+provisionnement_initial
+# ----------------------------------------------------
+
+# --- BOUCLE PRINCIPALE ---
+
+while [[ "$Option" != "4" ]]; do
+    
+    menu
+    
+    case "$Option" in
+    "1")
+        # --- SOUS-MENU AUTOMATISATION ---
+        
+        echo "Automatiser la prise de snapshot d'une VM...."
+        
+        # Afficher la liste des VMs si possible
+        if command -v qm &> /dev/null; then
+            echo "VMs Proxmox disponibles :"
+            qm list | column -t
+            echo ""
+        else
+            echo "Avertissement: La commande 'qm list' n'est pas disponible. (Poursuite sans liste des VMs)" >&2
+        fi
+        
+        read -p "Pour quelle VM voulez-vous automatiser le snapshot ? (VMID) : " vmid
+        # Afficher la VMs selectionner si possible
+        if ! qm status "$vmid" &>/dev/null; then
+            echo "Erreur: La VM $vmid n'existe pas." >&2
+        continue  
+        fi
+        
+        read -p "Vous voulez automatiser la prise de snapshot de la VMID $vmid (o/n) : " validation
+        
+        if [ "$validation" == "o" ]; then
+            
+            SousOption="" # Réinitialiser SousOption
+            while [[ "$SousOption" != "4" ]]; do
+                
+                menu_2
+                
+                case "$SousOption" in
+                
+                "1" | "2" | "3")
+                    
+                    case "$SousOption" in
+                        "1") echo "-> Niveau : Pas critique (Mensuel)."; ;;
+                        "2") echo "-> Niveau : Journalier."; ;;
+                        "3") echo "-> Niveau : Critique (30 minutes)."; ;;
+                    esac
+                    
+                    # Saisie des infos pour le snapshot
+                    read -p " Ajouter un nom à la snapshot :" name
+                    read -p " Ajoutez une description à la snapshot '$name' : " descipt
+                    
+                    # Appel au script moteur (délégation de l'écriture)
+                    FICHIER_CIBLE_REEL=$("$Initialisation_scrip" "$vmid" "$name" "$descipt" "$SousOption")
+                    STATUT_MOTEUR=$? # Capture du code de retour 
+
+                    if [ $STATUT_MOTEUR -eq 0 ]; then
+                        echo " Commande de snapshot enregistrée dans le script $FICHIER_CIBLE_REEL."
+                        echo "Prochaine exécution planifiée par CRON : $(grep "$FICHIER_CIBLE_REEL" <(crontab -l 2>/dev/null))"
+                    else
+                        echo " Erreur: L'enregistrement de la commande a échoué (Code $STATUT_MOTEUR)." >&2
+                    fi
+                    
+                    SousOption="4" # Quitter le sous-menu après l'action
+                ;;
+                
+                "4")
+                    echo "Retour au Menu Principal."
+                ;;
+                
+                *)
+                    echo "ERREUR : '$SousOption' non reconnue."
+                ;;
+                esac
+            done
+            
+        elif [ "$validation" == "n" ]; then
+            echo "Annulation de l'automatisation. Retour au Menu Principal."
+        fi
+        
+    ;;
+        
+    "2")
+        echo "---  Contenu des Scripts de Planification et CRON Actuel ---"
+        
+        # Affichage du contenu de chaque script d'automatisation
+        echo -e "\n### 1. Pas critique (Mensuel - $snapshot_PC) ###"
+        if [ -f "$snapshot_PC" ]; then cat "$snapshot_PC"; else echo "Le script n'existe pas encore."; fi
+        
+        echo -e "\n### 2. Journalier ($snapshot_J) ###"
+        if [ -f "$snapshot_J" ]; then cat "$snapshot_J"; else echo "Le script n'existe pas encore."; fi
+
+        echo -e "\n### 3. Critique (30m - $snapshot_C) ###"
+        if [ -f "$snapshot_C" ]; then cat "$snapshot_C"; else echo "Le script n'existe pas encore."; fi
+        
+        echo -e "\n---  Tâches CRON Installées pour cet Utilisateur ---"
+        crontab -l 2>/dev/null || echo "Aucune tâche CRON installée pour l'utilisateur actuel."
+        
+    ;;
+        
+    "3")
+        supprimer_snapshot_vm
+    ;;
+    
+    "4")
+        echo "QUITTER le script."
+        echo "Ciao..."
+    ;;
+    
+    *)
+        echo "ERREUR : '$Option' non reconnue."
+    ;;
+    esac
+    
+done
+
+
