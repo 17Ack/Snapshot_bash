@@ -1,7 +1,7 @@
 #!/bin/bash
 # Fichier : Automatisation_Snapshot.sh
 # Script principal : Interface de gestion et provisionnement des Snapshots Proxmox
-
+# Auteur : 17Ack 
 
 
 Chemin_stockage=/opt/proxmox-auto-snap
@@ -242,12 +242,12 @@ while [[ "$Option" != "4" ]]; do
                 echo " Erreur : VMID doit être un nombre entier." >&2
                 continue
         fi 
-        if grep -q "qm snapshot $VMID " "$Chemin_stockage"/snapshot_*.sh 2>/dev/null; then
+        if grep -q "qm snapshot $vmid " "$Chemin_stockage"/snapshot_*.sh 2>/dev/null; then
             echo "-------------------------------------------------------"
-            echo " ERREUR : La VM $VMID est déjà automatisée."
+            echo " ERREUR : La VM $vmid est déjà automatisée."
             echo "Veuillez d'abord supprimer son automatisation existante."
             echo "-------------------------------------------------------"
-            return 1 
+        continue
         fi
 
 
@@ -343,6 +343,3 @@ while [[ "$Option" != "4" ]]; do
     esac
     
 done
-
-
-
