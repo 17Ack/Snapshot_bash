@@ -52,9 +52,9 @@ installer_cron_job() {
     (crontab -l 2>/dev/null | grep -v "$script_chemin_abs" ; echo "$cron_job") | crontab -
     
     if [ $? -eq 0 ]; then
-        echo "Tâche CRON installée pour $chaque_script: ($prog_cron)"
+        echo "Tâche CRON installée pour $script_chemin_abs: ($prog_cron)"
     else
-        echo "Échec de l'installation de la tâche CRON pour $chaque_script." >&2
+        echo "Échec de l'installation de la tâche CRON pour $script_chemin_abs." >&2
         return 1
     fi
 }
@@ -118,7 +118,7 @@ cd "$Chemin_stockage" || { echo "Impossible d'accéder à $Chemin_stockage" >&2;
     done
     
     # 3. Création du Script Moteur (commande_snapshot.sh) - Contenu corrigé et simplifié
-     Initialisation_scrip="./commande_snapshot.sh"
+     local Initialisation_scrip="./commande_snapshot.sh"
     if [ ! -f "$Initialisation_scrip" ]; then
         echo "-> Création du script moteur $Initialisation_scrip..."
         
@@ -234,8 +234,23 @@ while [[ "$Option" != "4" ]]; do
         else
             echo "Avertissement: La commande 'qm list' n'est pas disponible. (Poursuite sans liste des VMs)" >&2
         fi
+
+        
         
         read -p "Pour quelle VM voulez-vous automatiser le snapshot ? (VMID) : " vmid
+        if ! [[ "$vmid" =~ ^[0-9]+$ ]]; then
+                echo " Erreur : VMID doit être un nombre entier." >&2
+                continue
+        fi 
+        if grep -q "qm snapshot $VMID " "$Chemin_stockage"/snapshot_*.sh 2>/dev/null; then
+            echo "-------------------------------------------------------"
+            echo " ERREUR : La VM $VMID est déjà automatisée."
+            echo "Veuillez d'abord supprimer son automatisation existante."
+            echo "-------------------------------------------------------"
+            return 1 
+        fi
+
+
         # Afficher la VMs selectionner si possible
         if ! qm status "$vmid" &>/dev/null; then
             echo "Erreur: La VM $vmid n'existe pas." >&2
@@ -328,5 +343,6 @@ while [[ "$Option" != "4" ]]; do
     esac
     
 done
+
 
 
