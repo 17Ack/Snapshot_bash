@@ -64,6 +64,9 @@ supprimer_snapshot_vm() {
     read -p "Entrez l'ID de la VM à supprimer de l'automatisation : " vmid_suppression
     # Ici, nous devrons lire les trois fichiers et supprimer la ligne correspondant à l'ID
     echo "Recherche et suppression des commandes de la VM $vmid_suppression dans : $snapshot_PC, $snapshot_J, $snapshot_C..."
+    echo ""
+    read -p "Appuyez sur [Entrée] pour revenir au menu..." pause
+        
 }
 
 
@@ -157,7 +160,7 @@ esac
 
 # --- 2. Construction de la Commande QM (Correction de l'Échappement appliquée !) ---
 # Le \ garantit que $(date ...) est évalué par CRON, et non par ce script.
-SNAPSHOT_CMD="qm snapshot $vmid ${NOM_SNAPSHOT}_\$(date +%Y%m%d-%H%M%S) --description \"$DESCRIPTION\""
+SNAPSHOT_CMD="qm snapshot $vmid "${NOM_SNAPSHOT}_\$(date +%Y%m%d-%H%M%S)" --description \"$DESCRIPTION\""
 
 # --- 3. Enregistrement dans le Fichier Script ---
 echo "$SNAPSHOT_CMD" >> "$CHAQUE_SCRIPT"
@@ -167,6 +170,9 @@ if [ $? -eq 0 ]; then
     exit 0
 else
     echo "Échec de l'écriture dans le fichier cible $CHAQUE_SCRIPT." >&2 
+    echo ""
+    read -p "Appuyez sur [Entrée] pour revenir au menu..." pause
+        
     exit 3
 fi
 
@@ -283,6 +289,9 @@ while [[ "$Option" != "4" ]]; do
                     # Appel au script moteur (délégation de l'écriture)
                     FICHIER_CIBLE_REEL=$("$Initialisation_scrip" "$vmid" "$name" "$descipt" "$SousOption")
                     STATUT_MOTEUR=$? # Capture du code de retour 
+                    echo ""
+                    read -p "Appuyez sur [Entrée] pour revenir au menu..." pause
+        
 
                     if [ $STATUT_MOTEUR -eq 0 ]; then
                         echo " Commande de snapshot enregistrée dans le script $FICHIER_CIBLE_REEL."
