@@ -312,19 +312,22 @@ while [[ "$Option" != "4" ]]; do
         
     "2")
         echo "---  Contenu des Scripts de Planification et CRON Actuel ---"
+       echo "---  CONTENU DES PLANIFICATIONS  ---"
         
-        # Affichage du contenu de chaque script d'automatisation
-        echo -e "\n### 1. Pas critique (Mensuel - $snapshot_PC) ###"
-        if [ -f "$snapshot_PC" ]; then cat "$snapshot_PC"; else echo "Le script n'existe pas encore."; fi
+        echo -e "\n### 1. MENSUEL ###"
+        [ -f "$snapshot_PC" ] && tail -n +3 "$snapshot_PC" || echo "Vide."
         
-        echo -e "\n### 2. Journalier ($snapshot_J) ###"
-        if [ -f "$snapshot_J" ]; then cat "$snapshot_J"; else echo "Le script n'existe pas encore."; fi
+        echo -e "\n### 2. JOURNALIER ###"
+        [ -f "$snapshot_J" ] && tail -n +3 "$snapshot_J" || echo "Vide."
 
-        echo -e "\n### 3. Critique (30m - $snapshot_C) ###"
-        if [ -f "$snapshot_C" ]; then cat "$snapshot_C"; else echo "Le script n'existe pas encore."; fi
+        echo -e "\n### 3. CRITIQUE (30m) ###"
+        [ -f "$snapshot_C" ] && tail -n +3 "$snapshot_C" || echo "Vide."
         
-        echo -e "\n---  Tâches CRON Installées pour cet Utilisateur ---"
-        crontab -l 2>/dev/null || echo "Aucune tâche CRON installée pour l'utilisateur actuel."
+        echo -e "\n---  CRONTAB SYSTEME ---"
+        crontab -l 2>/dev/null | grep "$Chemin_stockage"
+        
+        echo ""
+        read -p "Appuyez sur [Entrée] pour revenir au menu..." pause
         
     ;;
         
@@ -343,3 +346,5 @@ while [[ "$Option" != "4" ]]; do
     esac
     
 done
+
+
