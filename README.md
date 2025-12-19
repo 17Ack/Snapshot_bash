@@ -9,12 +9,10 @@ Un serveur Proxmox VE installé.
 
 Accès utilisateur Root ou privilèges Sudo.
 
-Utilitaire column (généralement présent par défaut) pour l'affichage des listes.
-
 Configuration Cron générée
 Le script installe automatiquement les règles suivantes dans votre crontab :
 
-3 Niveaux de Rétention :
+#### 3 Niveaux de Rétention :
 
 Mensuel (Pas critique) : Planifié le 1er de chaque mois à 02h00.
 
@@ -64,7 +62,7 @@ Nommer : Donnez un nom et une description. Le script s'occupe de l'horodatage.
 
 Vérifier : Utilisez l'Option 2 du menu pour voir vos tâches planifiées actuelles.
 
-Prérequis
+## Prérequis
 Un serveur Proxmox VE installé.
 
 Accès utilisateur Root ou privilèges Sudo.
@@ -72,9 +70,7 @@ Accès utilisateur Root ou privilèges Sudo.
 Utilitaire column (généralement présent par défaut) pour l'affichage des listes.
 
 Configuration Cron générée
-Le script installe automatiquement les règles suivantes dans votre crontab :
-
-Bash
+Le script installe automatiquement les règles suivantes dans le crontab géneral :
 
 0 2 1 * * /opt/proxmox-auto-snap/snapshot_PC.sh  # Mensuel
 
@@ -82,8 +78,8 @@ Bash
 
 */30 * * * * /opt/proxmox-auto-snap/snapshot_C.sh   # Critique
 
- Avertissement
-La fonctionnalité de suppression est actuellement en cours de développement (Option 3). Veillez à vérifier manuellement votre stockage pour éviter la saturation due à l'accumulation de snapshots.
+ # Avertissement !
+La fonctionnalité de suppression est actuellement en cours de développement (Option 3). Veuillez vérifier manuellement votre stockage pour éviter la saturation due à l'accumulation de snapshots. Si vous voulez suprimer l'aumomatisation de prise de snapshot d'une vm suprimer dans un des different script (snapshot_PC.sh, snapshot_J.sh,snapshot_C.sh) manuellemnt la commande " qm"vmid de la vm que vous voulez sup)..."   
 
 Licence
 Distribué sous la licence MIT. Voir LICENSE pour plus d'informations.
