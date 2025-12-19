@@ -42,19 +42,21 @@ check_root
 installer_cron_job() {
     local script_chemin_abs="$1"
     local prog_cron="$2"
-    
-    
-    
-    local cron_job="$prog_cron $script_chemin_abs"
-    
-    # Ajout/Mise à jour de la tâche CRON (Méthode fiable : supprime l'ancienne ligne, ajoute la nouvelle)
-    # 
-    (crontab -l 2>/dev/null | grep -v "$script_chemin_abs" ; echo "$cron_job") | crontab -
-    
+    local cron_job="$prog_cron root $script_chemin_abs"
+
+    # 1. On vérifie si le script est déjà mentionné dans /etc/crontab
+    if grep -q "$script_chemin_abs" /etc/crontab; then
+        # Si oui, on supprime l'ancienne ligne pour éviter les doublons
+        sed -i "\|$script_chemin_abs|d" /etc/crontab
+    fi
+
+    # 2. On ajoute la nouvelle ligne à la fin du fichier
+    echo "$cron_job" >> /etc/crontab
+
     if [ $? -eq 0 ]; then
-        echo "Tâche CRON installée pour $script_chemin_abs: ($prog_cron)"
+        echo "Tâche installée dans /etc/crontab pour $script_chemin_abs"
     else
-        echo "Échec de l'installation de la tâche CRON pour $script_chemin_abs." >&2
+        echo " Erreur lors de l'écriture dans /etc/crontab" >&2
         return 1
     fi
 }
