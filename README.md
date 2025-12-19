@@ -26,7 +26,7 @@ Interface Menu : Utilisation interactive simple pour ajouter des VMs sans touche
 
 Sécurité : Vérification des privilèges Root et détection des doublons pour éviter de surcharger les tâches.
 
-Moteur Dynamique : Génère des snapshots horodatés automatiquement (nom_YYYYMMDD-HHMMSS).
+Moteur Dynamique : Génère des snapshots horodatés automatiquement (nom_YMD-HMS).
 
  Architecture du Projet
 Le script organise ses composants dans /opt/proxmox-auto-snap :
@@ -77,8 +77,11 @@ Le script installe automatiquement les règles suivantes dans votre crontab :
 Bash
 
 0 2 1 * * /opt/proxmox-auto-snap/snapshot_PC.sh  # Mensuel
+
 0 3 * * * /opt/proxmox-auto-snap/snapshot_J.sh   # Journalier
+
 */30 * * * * /opt/proxmox-auto-snap/snapshot_C.sh   # Critique
+
  Avertissement
 La fonctionnalité de suppression est actuellement en cours de développement (Option 3). Veillez à vérifier manuellement votre stockage pour éviter la saturation due à l'accumulation de snapshots.
 
