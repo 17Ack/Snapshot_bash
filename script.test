@@ -95,7 +95,7 @@ cd "$Chemin_stockage" || { echo "Impossible d'accéder à $Chemin_stockage" >&2;
         "$snapshot_C|3|*/30 * * * *|Critique (30m)"             
     )
     
-    # 1. Création/Initialisation des 3 Fichiers Cibles (NOUVEAU BLOC AMÉLIORÉ)
+    # 1. Création/Initialisation des 3 Fichiers Cibles 
     
     echo "-> Vérification et initialisation des scripts cibles..."
     for ligne in "${matrice_cron[@]}"; do
@@ -122,16 +122,16 @@ cd "$Chemin_stockage" || { echo "Impossible d'accéder à $Chemin_stockage" >&2;
         installer_cron_job "$CHAQUE_SCRIPT" "$prog_cron"
     done
     
-    # 3. Création du Script Moteur (commande_snapshot.sh) - Contenu corrigé et simplifié
+    # 3. Création du Script Moteur (commande_snapshot.sh) 
      local Initialisation_scrip="./commande_snapshot.sh"
     if [ ! -f "$Initialisation_scrip" ]; then
         echo "-> Création du script moteur $Initialisation_scrip..."
         
-        # Utilisation du Here Document pour écrire le moteur optimisé et CORRIGÉ (l'échappement est essentiel)
+      
         cat << 'EOT' > "$Initialisation_scrip"
 
 #!/bin/bash
-# Script Moteur (Auto-généré par manager.sh) - Rôle : Ajouter une commande snapshot au bon fichier cible.
+
 
 # --- VARIABLES GLOBALES DU MOTEUR ---
 
