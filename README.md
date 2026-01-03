@@ -2,7 +2,7 @@
 Proxmox Auto-Snap est une solution d'automatisation légère en Bash pour gérer la planification de snapshots sur vos machines virtuelles Proxmox VE. Il permet de classer vos VMs par niveau de criticité et automatise l'inscription dans le crontab.
 
 ## Fonctionnalités
-Provisionnement Automatique : Le script configure son propre environnement au premier lancement.
+Provisionnement Automatique : Le script configure son propre environnement au premier lancement. 
 
 ## Prérequis
 Un serveur Proxmox VE installé.
